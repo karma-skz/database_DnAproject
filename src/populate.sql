@@ -240,7 +240,7 @@ INSERT INTO MissionAssignmentLab VALUES
 
 -- 15. Forensics Analyst
 INSERT INTO ForensicsAnalyst VALUES
-(103, 'Forensics Level 1', 10);
+(103, 'Forensics Level 1', 10),
 (113, 'Forensics Level 2', 13);
 
 -- 16. FieldOperative
@@ -293,7 +293,7 @@ INSERT INTO ForensicsAnalystArtifacts VALUES
 -- 19. AlchemistRankHistory
 INSERT INTO AlchemistRankHistory VALUES
 (102, 'Colonel', '1909-01-01', '1912-01-01'),
-(102, 'Brigadier General', '1912-01-02', NULL);
+(102, 'Brigadier General', '1912-01-02', NULL),
 (100, 'State Alchemist', '1909-10-01', NULL),
 (101, 'State Alchemist', '1910-01-01', NULL),
 (104, 'Major', '1908-05-01', '1911-05-01'),
