@@ -40,7 +40,7 @@ Data is inserted in a correct FK-respecting order.
 
 Implements a full command‑line interface (CLI) using raw parameterized SQL:
 
-* 5 READ operations
+* 10 READ operations
 * 3 WRITE operations (INSERT, UPDATE, DELETE)
 * Fully parameterized, no ORM or abstraction
 * Uses mysql‑connector‑python
@@ -105,66 +105,40 @@ Displays ingredient stock and hazard levels for a lab.
 
 Shows all transmutation attempts for a given artifact.
 
-### **6. Register a new alchemist (INSERT)**
+### **6. List active mission alchemists**
+
+Lists alchemists currently assigned to ongoing missions.
+
+### **7. Find high-danger artifacts**
+
+Lists artifacts with a danger level above a user-specified threshold.
+
+### **8. Summarize ingredient stock**
+
+Shows the total stock quantity of a specific ingredient across all labs.
+
+### **9. Show alchemist rank history**
+
+Displays the promotion history for a specific alchemist.
+
+### **10. List labs in region**
+
+Lists all laboratories within a specific region, ordered by security level.
+
+### **11. Register a new alchemist (INSERT)**
 
 Adds a new alchemist to the database.
 
-### **7. Update mission status (UPDATE)**
+### **12. Update mission status (UPDATE)**
 
 Modifies the status of a mission.
 
-### **8. Delete an artifact attempt (DELETE)**
+### **13. Delete an artifact attempt (DELETE)**
 
 Deletes a specific transmutation attempt.
 
-### **9. Quit**
+### **q. Quit**
 
 Exits the program.
-
----
-
-## 4. Video Demonstration Instructions
-
-Your submitted video must clearly show **two windows**:
-
-* **Window 1:** MySQL terminal (for before/after SELECTs)
-* **Window 2:** Python CLI (running main_app.py)
-
-### **For each WRITE operation** (INSERT, UPDATE, DELETE):
-
-#### **A. Before running the operation**
-
-Run a SELECT to show current data:
-Example:
-
-```sql
-SELECT * FROM Alchemists;
-```
-
-#### **B. Perform the operation in the Python app**
-
-Use the corresponding menu command.
-
-#### **C. Run the same SELECT again**
-
-Demonstrate that the change has occurred.
-
-Do this for:
-
-1. Register a new alchemist (INSERT)
-2. Update mission status (UPDATE)
-3. Delete an artifact attempt (DELETE)
-
-### **For READ operations**
-
-Demonstrate each by selecting the numbered option in the Python CLI:
-
-* Show mission list
-* Search alchemists by specialization
-* Show units by city/region
-* Show lab inventory
-* View artifact attempts
-
-Each must clearly print output in the video.
 
 ---
