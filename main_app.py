@@ -65,6 +65,8 @@ class DatabaseGateway:
             SELECT DISTINCT a.AlchemistID, a.FName, a.LName
             FROM Alchemists a
             JOIN AlchemistMissionHistory h ON a.AlchemistID = h.AlchemistID
+            JOIN Missions m ON h.MissionID = m.MissionID
+            WHERE m.Status = 'Ongoing'
         """
         return self._fetch_all(query)
 
@@ -89,7 +91,7 @@ class DatabaseGateway:
 
     def get_alchemist_rank_history(self, alchemist_id):
         query = """
-            SELECT AlchemistID, Rank, FromDate, ToDate
+            SELECT AlchemistID, `Rank`, FromDate, ToDate
             FROM AlchemistRankHistory
             WHERE AlchemistID = %s
             ORDER BY FromDate
@@ -192,104 +194,147 @@ class FMACLI:
         print("="*40)
 
     # ---------------- ACTIONS ----------------
+    def _print_table(self, columns, rows):
+        if not rows:
+            print("\nNo results found.\n")
+            return
+
+        processed_rows = []
+        for r in rows:
+            new_row = []
+            for _, accessor in columns:
+                val = accessor(r) if callable(accessor) else r.get(accessor)
+                new_row.append(str(val) if val is not None else "")
+            processed_rows.append(new_row)
+
+        headers = [c[0] for c in columns]
+        widths = [len(h) for h in headers]
+        for row in processed_rows:
+            for i, val in enumerate(row):
+                widths[i] = max(widths[i], len(val))
+
+        row_fmt = "| " + " | ".join(f"{{:<{w}}}" for w in widths) + " |"
+        sep = "+-" + "-+-".join("-" * w for w in widths) + "-+"
+
+        print("\n" + sep)
+        print(row_fmt.format(*headers))
+        print(sep)
+        for row in processed_rows:
+            print(row_fmt.format(*row))
+        print(sep + "\n")
+
     def action_list_missions(self):
         rows = self.gateway.list_missions()
-        print(f"\n{'ID':<5} {'Code':<12} {'Type':<20} {'Status':<10} {'Start':<12} {'End':<12}")
-        print("-" * 75)
-        for r in rows:
-            end_date = str(r['EndDate']) if r['EndDate'] else "Ongoing"
-            print(f"{r['MissionID']:<5} {r['MissionCode']:<12} {r['MissionType']:<20} {r['Status']:<10} {str(r['StartDate']):<12} {end_date:<12}")
-        print()
+        columns = [
+            ("ID", "MissionID"),
+            ("Code", "MissionCode"),
+            ("Type", "MissionType"),
+            ("Status", "Status"),
+            ("Start", "StartDate"),
+            ("End", lambda r: str(r['EndDate']) if r['EndDate'] else "Ongoing")
+        ]
+        self._print_table(columns, rows)
 
     def action_search_alchemists(self):
         kw = input("Keyword: ")
         rows = self.gateway.search_alchemists_by_specialization(kw)
-        print(f"\n{'ID':<5} {'Name':<25} {'Specialization':<30}")
-        print("-" * 60)
-        for r in rows:
-            name = f"{r['FName']} {r['LName']}"
-            print(f"{r['AlchemistID']:<5} {name:<25} {r['Specialization']:<30}")
-        print()
+        columns = [
+            ("ID", "AlchemistID"),
+            ("Name", lambda r: f"{r['FName']} {r['LName']}"),
+            ("Specialization", "Specialization")
+        ]
+        self._print_table(columns, rows)
 
     def action_units_city(self):
         kw = input("City/Region keyword: ")
         rows = self.gateway.get_units_in_city(kw)
-        print(f"\n{'Unit':<20} {'City':<15} {'Region':<15} {'Cmdr ID':<10}")
-        print("-" * 65)
-        for r in rows:
-            print(f"{r['UnitName']:<20} {r['City']:<15} {r['Region']:<15} {r['CommanderID']:<10}")
-        print()
+        columns = [
+            ("Unit", "UnitName"),
+            ("City", "City"),
+            ("Region", "Region"),
+            ("Cmdr ID", "CommanderID")
+        ]
+        self._print_table(columns, rows)
 
     def action_lab_inventory(self):
         lab = int(input("Lab ID: "))
         rows = self.gateway.get_lab_inventory(lab)
-        print(f"\n{'Chemical':<25} {'Qty':<10} {'Hazard':<15}")
-        print("-" * 50)
-        for r in rows:
-            print(f"{r['ChemicalName']:<25} {r['StockQuantity']:<10} {r['HazardClass']:<15}")
-        print()
+        columns = [
+            ("Lab Name", "LabName"),
+            ("Chemical", "ChemicalName"),
+            ("Qty", "StockQuantity"),
+            ("Hazard", "HazardClass")
+        ]
+        self._print_table(columns, rows)
 
     def action_artifact_attempts(self):
         aid = int(input("Artifact ID: "))
         rows = self.gateway.get_artifact_attempts(aid)
-        print(f"\n{'No.':<5} {'Date':<12} {'Result':<20} {'Casualties':<12} {'Alchemist':<20}")
-        print("-" * 75)
-        for r in rows:
-            name = f"{r['FName']} {r['LName']}"
-            print(f"{r['AttemptNo']:<5} {str(r['AttemptDate']):<12} {r['Result']:<20} {r['Casualties']:<12} {name:<20}")
-        print()
+        columns = [
+            ("No.", "AttemptNo"),
+            ("Date", "AttemptDate"),
+            ("Result", "Result"),
+            ("Casualties", "Casualties"),
+            ("Alchemist", lambda r: f"{r['FName']} {r['LName']}")
+        ]
+        self._print_table(columns, rows)
 
     def action_active_mission_alchemists(self):
         rows = self.gateway.get_active_mission_alchemists()
-        print(f"\n{'ID':<5} {'Name':<30}")
-        print("-" * 40)
-        for r in rows:
-            name = f"{r['FName']} {r['LName']}"
-            print(f"{r['AlchemistID']:<5} {name:<30}")
-        print()
+        columns = [
+            ("ID", "AlchemistID"),
+            ("Name", lambda r: f"{r['FName']} {r['LName']}")
+        ]
+        self._print_table(columns, rows)
 
     def action_high_danger_artifacts(self):
         try:
             threshold = int(input("Danger Threshold: "))
             rows = self.gateway.get_high_danger_artifacts(threshold)
-            print(f"\n{'ID':<5} {'Name':<25} {'Danger':<10} {'Lab ID':<10}")
-            print("-" * 55)
-            for r in rows:
-                print(f"{r['ArtifactID']:<5} {r['Name']:<25} {r['DangerLevel']:<10} {r['LabID']:<10}")
-            print()
+            columns = [
+                ("ID", "ArtifactID"),
+                ("Name", "Name"),
+                ("Danger", "DangerLevel"),
+                ("Lab ID", "LabID")
+            ]
+            self._print_table(columns, rows)
         except ValueError:
             print("Invalid threshold.\n")
 
     def action_ingredient_stock_summary(self):
         name = input("Ingredient Name: ")
         rows = self.gateway.get_ingredient_stock_summary(name)
-        print(f"\n{'Chemical':<25} {'Total Stock':<15}")
-        print("-" * 45)
-        for r in rows:
-            print(f"{r['ChemicalName']:<25} {r['TotalStock']:<15}")
-        print()
+        columns = [
+            ("Chemical", "ChemicalName"),
+            ("Total Stock", "TotalStock")
+        ]
+        self._print_table(columns, rows)
 
     def action_alchemist_rank_history(self):
         try:
             aid = int(input("Alchemist ID: "))
             rows = self.gateway.get_alchemist_rank_history(aid)
-            print(f"\n{'ID':<5} {'Rank':<15} {'From':<12} {'To':<12}")
-            print("-" * 50)
-            for r in rows:
-                to_date = str(r['ToDate']) if r['ToDate'] else "Current"
-                print(f"{r['AlchemistID']:<5} {r['Rank']:<15} {str(r['FromDate']):<12} {to_date:<12}")
-            print()
+            columns = [
+                ("ID", "AlchemistID"),
+                ("Rank", "Rank"),
+                ("From", "FromDate"),
+                ("To", lambda r: str(r['ToDate']) if r['ToDate'] else "Current")
+            ]
+            self._print_table(columns, rows)
         except ValueError:
             print("Invalid ID.\n")
 
     def action_labs_by_region(self):
         region = input("Region: ")
         rows = self.gateway.get_labs_by_region(region)
-        print(f"\n{'ID':<5} {'Lab Name':<25} {'City':<15} {'Region':<15} {'Security':<10}")
-        print("-" * 75)
-        for r in rows:
-            print(f"{r['LabID']:<5} {r['LabName']:<25} {r['City']:<15} {r['Region']:<15} {r['SecurityLevel']:<10}")
-        print()
+        columns = [
+            ("ID", "LabID"),
+            ("Lab Name", "LabName"),
+            ("City", "City"),
+            ("Region", "Region"),
+            ("Security", "SecurityLevel")
+        ]
+        self._print_table(columns, rows)
 
     def action_register_alchemist(self):
         print("-- Register New Alchemist --")
